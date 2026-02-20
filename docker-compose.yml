@@ -1,0 +1,136 @@
+services:
+  postgres:
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    platform: linux/arm64/v8
+    container_name: spatialpathdb-postgres
+    environment:
+      POSTGRES_DB: spatialpathdb
+      POSTGRES_USER: pathdb_user
+      POSTGRES_PASSWORD: pathdb_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pathdb_user -d spatialpathdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - spatialpathdb-net
+
+  redis:
+    image: redis:7-alpine
+    platform: linux/arm64/v8
+    container_name: spatialpathdb-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - spatialpathdb-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: spatialpathdb-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/spatialpathdb
+      SPRING_DATASOURCE_USERNAME: pathdb_user
+      SPRING_DATASOURCE_PASSWORD: pathdb_pass
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - spatialpathdb-net
+
+  spatial-engine:
+    build:
+      context: ./spatial-engine
+      dockerfile: Dockerfile
+    container_name: spatialpathdb-spatial-engine
+    environment:
+      DATABASE_URL: postgresql://pathdb_user:pathdb_pass@postgres:5432/spatialpathdb
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./spatial-engine/src:/app/src:ro
+      - spatial-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - spatialpathdb-net
+
+  celery-worker:
+    build:
+      context: ./spatial-engine
+      dockerfile: Dockerfile
+    container_name: spatialpathdb-celery-worker
+    command: celery -A celery_app worker --loglevel=info --concurrency=4
+    environment:
+      DATABASE_URL: postgresql://pathdb_user:pathdb_pass@postgres:5432/spatialpathdb
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - spatial-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - spatialpathdb-net
+
+  celery-beat:
+    build:
+      context: ./spatial-engine
+      dockerfile: Dockerfile
+    container_name: spatialpathdb-celery-beat
+    command: celery -A celery_app beat --loglevel=info
+    environment:
+      DATABASE_URL: postgresql://pathdb_user:pathdb_pass@postgres:5432/spatialpathdb
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - celery-worker
+    networks:
+      - spatialpathdb-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: spatialpathdb-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_API_URL: http://localhost:8080
+    depends_on:
+      - backend
+    networks:
+      - spatialpathdb-net
+
+volumes:
+  pgdata:
+  redisdata:
+  spatial-data:
+
+networks:
+  spatialpathdb-net:
+    driver: bridge
