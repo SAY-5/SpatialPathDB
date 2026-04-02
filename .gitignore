@@ -1,0 +1,36 @@
+# data (download via run_ingest.py)
+data/
+data_cache/
+*.parquet
+*.h5
+
+# postgres
+pgdata/
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# os
+.DS_Store
+__MACOSX/
+
+# editor
+.vscode/
+.idea/
+*.swp
+
+# benchmark results (regenerated)
+results/raw/
+results/figures/
+results/tables/
+
+# AWS deploy artifacts
+deploy/connection.env
+*.pem
+
+# Claude
+.claude/

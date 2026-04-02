@@ -1,0 +1,13 @@
+numpy
+scipy
+matplotlib
+pandas
+pyarrow
+datasets
+psycopg2-binary
+asyncpg
+shapely
+tqdm
+tabulate
+duckdb
+huggingface_hub

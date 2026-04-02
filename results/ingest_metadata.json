@@ -1,0 +1,272 @@
+{
+  "slide_ids": [
+    "TCGA-2F-A9KO-01Z-00-DX1",
+    "TCGA-4Z-AA7R-01Z-00-DX1",
+    "TCGA-5N-A9KI-01Z-00-DX1",
+    "TCGA-BT-A0YX-01Z-00-DX1",
+    "TCGA-BT-A42B-01Z-00-DX1",
+    "TCGA-CF-A27C-01Z-00-DX1",
+    "TCGA-CF-A5UA-01Z-00-DX1",
+    "TCGA-CU-A0YO-01Z-00-DX1",
+    "TCGA-E7-A4IJ-01Z-00-DX1",
+    "TCGA-E7-A7PW-01Z-00-DX1",
+    "TCGA-FD-A3B6-01Z-00-DX1",
+    "TCGA-FD-A43N-01Z-00-DX1",
+    "TCGA-FD-A5BT-01Z-00-DX1",
+    "TCGA-FD-A62P-01Z-00-DX1",
+    "TCGA-FD-A6TK-01Z-00-DX1",
+    "TCGA-G2-A2EJ-01Z-00-DX3",
+    "TCGA-G2-AA3B-01Z-00-DX2",
+    "TCGA-GC-A3RD-01Z-00-DX1",
+    "TCGA-GD-A3OP-01Z-00-DX1",
+    "TCGA-GU-A764-01Z-00-DX1",
+    "TCGA-GV-A3QK-01Z-00-DX1",
+    "TCGA-K4-A3WU-01Z-00-DX1",
+    "TCGA-K4-A6MB-01Z-00-DX1",
+    "TCGA-UY-A8OB-01Z-00-DX1",
+    "TCGA-XF-A8HH-01Z-00-DX1",
+    "TCGA-XF-A9ST-01Z-00-DX1",
+    "TCGA-XF-A9T4-01Z-00-DX1",
+    "TCGA-XF-AAMJ-01Z-00-DX1",
+    "TCGA-XF-AAMZ-01Z-00-DX1"
+  ],
+  "object_counts": {
+    "TCGA-2F-A9KO-01Z-00-DX1": 3094340,
+    "TCGA-4Z-AA7R-01Z-00-DX1": 2074128,
+    "TCGA-5N-A9KI-01Z-00-DX1": 2789240,
+    "TCGA-BT-A0YX-01Z-00-DX1": 4057170,
+    "TCGA-BT-A42B-01Z-00-DX1": 2884284,
+    "TCGA-CF-A27C-01Z-00-DX1": 1676026,
+    "TCGA-CF-A5UA-01Z-00-DX1": 2227342,
+    "TCGA-CU-A0YO-01Z-00-DX1": 1674064,
+    "TCGA-E7-A4IJ-01Z-00-DX1": 2614722,
+    "TCGA-E7-A7PW-01Z-00-DX1": 4710732,
+    "TCGA-FD-A3B6-01Z-00-DX1": 2764984,
+    "TCGA-FD-A43N-01Z-00-DX1": 4127542,
+    "TCGA-FD-A5BT-01Z-00-DX1": 2367748,
+    "TCGA-FD-A62P-01Z-00-DX1": 2399156,
+    "TCGA-FD-A6TK-01Z-00-DX1": 2196842,
+    "TCGA-G2-A2EJ-01Z-00-DX3": 10898296,
+    "TCGA-G2-AA3B-01Z-00-DX2": 7074034,
+    "TCGA-GC-A3RD-01Z-00-DX1": 1299704,
+    "TCGA-GD-A3OP-01Z-00-DX1": 1431170,
+    "TCGA-GU-A764-01Z-00-DX1": 2991644,
+    "TCGA-GV-A3QK-01Z-00-DX1": 3674058,
+    "TCGA-K4-A3WU-01Z-00-DX1": 2692510,
+    "TCGA-K4-A6MB-01Z-00-DX1": 1848604,
+    "TCGA-UY-A8OB-01Z-00-DX1": 3108796,
+    "TCGA-XF-A8HH-01Z-00-DX1": 2170086,
+    "TCGA-XF-A9ST-01Z-00-DX1": 545444,
+    "TCGA-XF-A9T4-01Z-00-DX1": 1811596,
+    "TCGA-XF-AAMJ-01Z-00-DX1": 1815426,
+    "TCGA-XF-AAMZ-01Z-00-DX1": 1552598
+  },
+  "total_objects": 84572286,
+  "metas": {
+    "TCGA-2F-A9KO-01Z-00-DX1": {
+      "slide_id": "TCGA-2F-A9KO-01Z-00-DX1",
+      "image_width": "135168.0",
+      "image_height": "105472.0",
+      "num_objects": "1547170",
+      "num_buckets": "30"
+    },
+    "TCGA-4Z-AA7R-01Z-00-DX1": {
+      "slide_id": "TCGA-4Z-AA7R-01Z-00-DX1",
+      "image_width": "81672.0",
+      "image_height": "76761.0",
+      "num_objects": "1037064",
+      "num_buckets": "20"
+    },
+    "TCGA-5N-A9KI-01Z-00-DX1": {
+      "slide_id": "TCGA-5N-A9KI-01Z-00-DX1",
+      "image_width": "111872.0",
+      "image_height": "149248.0",
+      "num_objects": "1394620",
+      "num_buckets": "27"
+    },
+    "TCGA-BT-A0YX-01Z-00-DX1": {
+      "slide_id": "TCGA-BT-A0YX-01Z-00-DX1",
+      "image_width": "109479.0",
+      "image_height": "94998.0",
+      "num_objects": "2028585",
+      "num_buckets": "40"
+    },
+    "TCGA-BT-A42B-01Z-00-DX1": {
+      "slide_id": "TCGA-BT-A42B-01Z-00-DX1",
+      "image_width": "116144.0",
+      "image_height": "92834.0",
+      "num_objects": "1442142",
+      "num_buckets": "28"
+    },
+    "TCGA-CF-A27C-01Z-00-DX1": {
+      "slide_id": "TCGA-CF-A27C-01Z-00-DX1",
+      "image_width": "70448.0",
+      "image_height": "52609.0",
+      "num_objects": "838013",
+      "num_buckets": "16"
+    },
+    "TCGA-CF-A5UA-01Z-00-DX1": {
+      "slide_id": "TCGA-CF-A5UA-01Z-00-DX1",
+      "image_width": "77112.0",
+      "image_height": "63288.0",
+      "num_objects": "1113671",
+      "num_buckets": "22"
+    },
+    "TCGA-CU-A0YO-01Z-00-DX1": {
+      "slide_id": "TCGA-CU-A0YO-01Z-00-DX1",
+      "image_width": "148818.0",
+      "image_height": "70054.0",
+      "num_objects": "837032",
+      "num_buckets": "16"
+    },
+    "TCGA-E7-A4IJ-01Z-00-DX1": {
+      "slide_id": "TCGA-E7-A4IJ-01Z-00-DX1",
+      "image_width": "100912.0",
+      "image_height": "89512.0",
+      "num_objects": "1307361",
+      "num_buckets": "26"
+    },
+    "TCGA-E7-A7PW-01Z-00-DX1": {
+      "slide_id": "TCGA-E7-A7PW-01Z-00-DX1",
+      "image_width": "99599.0",
+      "image_height": "85079.0",
+      "num_objects": "2355366",
+      "num_buckets": "47"
+    },
+    "TCGA-FD-A3B6-01Z-00-DX1": {
+      "slide_id": "TCGA-FD-A3B6-01Z-00-DX1",
+      "image_width": "103768.0",
+      "image_height": "94108.0",
+      "num_objects": "1382492",
+      "num_buckets": "27"
+    },
+    "TCGA-FD-A43N-01Z-00-DX1": {
+      "slide_id": "TCGA-FD-A43N-01Z-00-DX1",
+      "image_width": "121511.0",
+      "image_height": "92823.0",
+      "num_objects": "2063771",
+      "num_buckets": "41"
+    },
+    "TCGA-FD-A5BT-01Z-00-DX1": {
+      "slide_id": "TCGA-FD-A5BT-01Z-00-DX1",
+      "image_width": "125495.0",
+      "image_height": "76011.0",
+      "num_objects": "1183874",
+      "num_buckets": "23"
+    },
+    "TCGA-FD-A62P-01Z-00-DX1": {
+      "slide_id": "TCGA-FD-A62P-01Z-00-DX1",
+      "image_width": "123503.0",
+      "image_height": "88697.0",
+      "num_objects": "1199578",
+      "num_buckets": "23"
+    },
+    "TCGA-FD-A6TK-01Z-00-DX1": {
+      "slide_id": "TCGA-FD-A6TK-01Z-00-DX1",
+      "image_width": "129479.0",
+      "image_height": "78861.0",
+      "num_objects": "1098421",
+      "num_buckets": "21"
+    },
+    "TCGA-G2-A2EJ-01Z-00-DX3": {
+      "slide_id": "TCGA-G2-A2EJ-01Z-00-DX3",
+      "image_width": "90439.0",
+      "image_height": "70710.0",
+      "num_objects": "5449148",
+      "num_buckets": "108"
+    },
+    "TCGA-G2-AA3B-01Z-00-DX2": {
+      "slide_id": "TCGA-G2-AA3B-01Z-00-DX2",
+      "image_width": "143424.0",
+      "image_height": "78655.0",
+      "num_objects": "3537017",
+      "num_buckets": "70"
+    },
+    "TCGA-GC-A3RD-01Z-00-DX1": {
+      "slide_id": "TCGA-GC-A3RD-01Z-00-DX1",
+      "image_width": "96883.0",
+      "image_height": "73978.0",
+      "num_objects": "649852",
+      "num_buckets": "12"
+    },
+    "TCGA-GD-A3OP-01Z-00-DX1": {
+      "slide_id": "TCGA-GD-A3OP-01Z-00-DX1",
+      "image_width": "179927.0",
+      "image_height": "67146.0",
+      "num_objects": "715585",
+      "num_buckets": "14"
+    },
+    "TCGA-GU-A764-01Z-00-DX1": {
+      "slide_id": "TCGA-GU-A764-01Z-00-DX1",
+      "image_width": "97608.0",
+      "image_height": "89496.0",
+      "num_objects": "1495822",
+      "num_buckets": "29"
+    },
+    "TCGA-GV-A3QK-01Z-00-DX1": {
+      "slide_id": "TCGA-GV-A3QK-01Z-00-DX1",
+      "image_width": "109224.0",
+      "image_height": "90186.0",
+      "num_objects": "1837029",
+      "num_buckets": "36"
+    },
+    "TCGA-K4-A3WU-01Z-00-DX1": {
+      "slide_id": "TCGA-K4-A3WU-01Z-00-DX1",
+      "image_width": "95200.0",
+      "image_height": "93584.0",
+      "num_objects": "1346255",
+      "num_buckets": "26"
+    },
+    "TCGA-K4-A6MB-01Z-00-DX1": {
+      "slide_id": "TCGA-K4-A6MB-01Z-00-DX1",
+      "image_width": "99589.0",
+      "image_height": "73787.0",
+      "num_objects": "924302",
+      "num_buckets": "18"
+    },
+    "TCGA-UY-A8OB-01Z-00-DX1": {
+      "slide_id": "TCGA-UY-A8OB-01Z-00-DX1",
+      "image_width": "139439.0",
+      "image_height": "91375.0",
+      "num_objects": "1554398",
+      "num_buckets": "31"
+    },
+    "TCGA-XF-A8HH-01Z-00-DX1": {
+      "slide_id": "TCGA-XF-A8HH-01Z-00-DX1",
+      "image_width": "135455.0",
+      "image_height": "78536.0",
+      "num_objects": "1085043",
+      "num_buckets": "21"
+    },
+    "TCGA-XF-A9ST-01Z-00-DX1": {
+      "slide_id": "TCGA-XF-A9ST-01Z-00-DX1",
+      "image_width": "71711.0",
+      "image_height": "71794.0",
+      "num_objects": "272722",
+      "num_buckets": "5"
+    },
+    "TCGA-XF-A9T4-01Z-00-DX1": {
+      "slide_id": "TCGA-XF-A9T4-01Z-00-DX1",
+      "image_width": "115535.0",
+      "image_height": "83950.0",
+      "num_objects": "905798",
+      "num_buckets": "18"
+    },
+    "TCGA-XF-AAMJ-01Z-00-DX1": {
+      "slide_id": "TCGA-XF-AAMJ-01Z-00-DX1",
+      "image_width": "87647.0",
+      "image_height": "67813.0",
+      "num_objects": "907713",
+      "num_buckets": "18"
+    },
+    "TCGA-XF-AAMZ-01Z-00-DX1": {
+      "slide_id": "TCGA-XF-AAMZ-01Z-00-DX1",
+      "image_width": "105575.0",
+      "image_height": "62084.0",
+      "num_objects": "776299",
+      "num_buckets": "15"
+    }
+  },
+  "hilbert_order": 8,
+  "bucket_target": 50000
+}

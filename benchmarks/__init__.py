@@ -1,0 +1,1 @@
+"""SpatialPathDB benchmark suite."""
