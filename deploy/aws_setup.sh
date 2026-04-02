@@ -15,7 +15,7 @@ set -euo pipefail
 # Configuration
 # ---------------------------------------------------------------------------
 INSTANCE_TYPE="r5.4xlarge"      # 16 vCPUs, 128GB RAM
-AMI_ID="ami-0c7217cdde317cfec"  # Ubuntu 22.04 LTS us-east-1 (update for region)
+AMI_ID="ami-00de3875b03809ec5"  # Ubuntu 22.04 LTS us-east-1 (2026-03-20)
 REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 KEY_NAME="spdb-benchmark"
 SG_NAME="spdb-benchmark-sg"
