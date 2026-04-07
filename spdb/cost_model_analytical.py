@@ -485,6 +485,212 @@ def density_weighted_buckets_touched(viewport_frac, p, bucket_densities,
 
 
 # ---------------------------------------------------------------------------
+# Partition ceiling: B* prediction and adaptive strategy
+# ---------------------------------------------------------------------------
+
+def predict_partition_ceiling(
+    n_objects_per_slide: int = 1_260_000,
+    n_slides: int = 127,
+    viewport_frac: float = 0.05,
+    alpha_plan: float = 0.1,
+    C_h: float = 2.0,
+    bucket_target: int = 50_000,
+    planning_threshold_ms: float = 10.0,
+    fanout: int = 100,
+    p: int = 8,
+) -> dict:
+    """Predict B* (partition ceiling) and recommend storage strategy.
+
+    The partition ceiling is the total partition count at which planner
+    overhead C_plan = alpha * B_total exceeds a threshold, causing SPDB
+    query latency to degrade below simpler layouts.
+
+    Analysis:
+      - SPDB: B_total = sum over slides of ceil(n_i / T)
+      - SO-C: B_total = n_slides (one partition per slide, BRIN for intra-slide)
+      - Mono-C: B_total = 1 (single table, BRIN for everything)
+
+    At B_total > B*, SPDB's planning overhead exceeds pruning benefit.
+    SO-C avoids this by keeping B_total = n_slides while achieving
+    equivalent scan performance via physical Hilbert clustering + BRIN.
+
+    Parameters
+    ----------
+    n_objects_per_slide : int
+        Mean objects per slide.
+    n_slides : int
+        Number of distinct slides in the dataset.
+    viewport_frac : float
+        Typical viewport fraction.
+    alpha_plan : float
+        Planning cost per partition (ms per partition).
+    C_h : float
+        Hilbert boundary constant.
+    bucket_target : int
+        SPDB bucket target T.
+    planning_threshold_ms : float
+        Threshold above which planning dominates (default 10ms).
+    fanout : int
+        GiST index fanout.
+    p : int
+        Hilbert order.
+
+    Returns
+    -------
+    dict with B*, recommended strategy, cost comparison.
+    """
+    # B*: partition count where planning hits threshold
+    B_star = int(planning_threshold_ms / alpha_plan) if alpha_plan > 0 else float("inf")
+
+    # SPDB partition count
+    buckets_per_slide = max(1, n_objects_per_slide // bucket_target)
+    B_spdb = n_slides * buckets_per_slide
+
+    # SO-C partition count (one per slide)
+    B_soc = n_slides
+
+    # Planning costs
+    plan_spdb = alpha_plan * B_spdb
+    plan_soc = alpha_plan * B_soc
+    plan_mono = alpha_plan  # single table
+
+    # Pruning benefit: compare SPDB scan cost vs Mono-C scan cost
+    # SPDB: scans E[B_hit] small GiST indexes of size T
+    E_Bhit_spdb = viewport_frac * buckets_per_slide + C_h * math.sqrt(viewport_frac) * math.sqrt(buckets_per_slide)
+    E_Bhit_spdb = min(E_Bhit_spdb, buckets_per_slide)
+
+    # SO-C: BRIN prunes at block level on Hilbert-sorted data within the slide
+    # Effective selectivity: BRIN achieves ~sqrt(f) pages scanned (locality-aware)
+    # Total scan on SO-C is equivalent to scanning E_Bhit_spdb * T objects via BRIN
+    brin_pages = max(1, math.ceil(n_objects_per_slide * viewport_frac / 100))  # BRIN granularity
+
+    # Total query cost comparison
+    cost_spdb = cost_function_T(bucket_target, n_objects_per_slide, viewport_frac,
+                                 C_h=C_h, alpha=alpha_plan)
+
+    # SO-C cost: planning for n_slides + BRIN scan within single partition
+    depth_soc = max(1, math.ceil(math.log(max(1, n_objects_per_slide)) / math.log(fanout)))
+    tuples_per_page = max(1, 8192 // 80)
+    matching_pages = max(1, math.ceil(n_objects_per_slide * viewport_frac / tuples_per_page))
+    cost_soc = plan_soc + depth_soc * 0.5 + matching_pages * 0.08  # GiST + seq scan
+
+    # Mono-C cost: BRIN on single huge table
+    depth_mono = max(1, math.ceil(math.log(max(1, n_objects_per_slide * n_slides)) / math.log(fanout)))
+    cost_mono = plan_mono + depth_mono * 0.5 + matching_pages * 5 * 0.08  # worse locality
+
+    # Determine whether SPDB exceeds ceiling
+    spdb_exceeds_ceiling = B_spdb > B_star
+
+    # Recommended strategy
+    if B_spdb <= B_star:
+        recommendation = "SPDB"
+        reason = f"B_total={B_spdb} <= B*={B_star}: partition pruning benefit exceeds planner cost"
+    elif B_soc <= B_star:
+        recommendation = "SO-C"
+        reason = (f"B_total(SPDB)={B_spdb} > B*={B_star}: switch to SO-C "
+                  f"(B_total={B_soc}) with per-partition Hilbert CLUSTER + BRIN")
+    else:
+        recommendation = "Mono-C"
+        reason = (f"Both SPDB ({B_spdb}) and SO-C ({B_soc}) exceed B*={B_star}: "
+                  f"use monolithic Hilbert-CLUSTERed table with BRIN")
+
+    return {
+        "B_star": B_star,
+        "B_spdb": B_spdb,
+        "B_soc": B_soc,
+        "B_mono": 1,
+        "buckets_per_slide": buckets_per_slide,
+        "spdb_exceeds_ceiling": spdb_exceeds_ceiling,
+        "planning_cost_ms": {
+            "SPDB": round(plan_spdb, 2),
+            "SO-C": round(plan_soc, 2),
+            "Mono-C": round(plan_mono, 2),
+        },
+        "estimated_query_cost_ms": {
+            "SPDB": round(cost_spdb, 2),
+            "SO-C": round(cost_soc, 2),
+            "Mono-C": round(cost_mono, 2),
+        },
+        "recommendation": recommendation,
+        "reason": reason,
+        "E_Bhit_spdb_per_slide": round(float(E_Bhit_spdb), 2),
+        "pruning_rate_spdb": round(1.0 - E_Bhit_spdb / buckets_per_slide, 4),
+        "alpha_plan": alpha_plan,
+        "planning_threshold_ms": planning_threshold_ms,
+    }
+
+
+def adaptive_layout_selector(
+    slide_catalog: list[dict],
+    alpha_plan: float = 0.1,
+    planning_threshold_ms: float = 10.0,
+    bucket_target: int = 50_000,
+    C_h: float = 2.0,
+) -> dict:
+    """Given a catalog of slides, select the optimal storage layout.
+
+    For each possible layout, computes total partition count and predicts
+    whether it exceeds B*.  Returns the recommended layout.
+
+    Parameters
+    ----------
+    slide_catalog : list of dict
+        Each dict has: slide_id (str), n_objects (int).
+    alpha_plan, planning_threshold_ms, bucket_target, C_h : float
+        Cost model parameters.
+
+    Returns
+    -------
+    dict with layout recommendation and per-layout analysis.
+    """
+    B_star = int(planning_threshold_ms / alpha_plan) if alpha_plan > 0 else 10_000
+
+    n_slides = len(slide_catalog)
+    total_objects = sum(s["n_objects"] for s in slide_catalog)
+
+    # SPDB: two-level partitioning
+    spdb_partitions = sum(max(1, s["n_objects"] // bucket_target) for s in slide_catalog)
+
+    # SO-C: one partition per slide
+    soc_partitions = n_slides
+
+    layouts = {
+        "Mono-C": {
+            "partitions": 1,
+            "exceeds_ceiling": False,
+            "description": "Monolithic + Hilbert CLUSTER + BRIN",
+        },
+        "SO-C": {
+            "partitions": soc_partitions,
+            "exceeds_ceiling": soc_partitions > B_star,
+            "description": f"Slide-only ({soc_partitions} parts) + per-partition Hilbert CLUSTER + BRIN",
+        },
+        "SPDB": {
+            "partitions": spdb_partitions,
+            "exceeds_ceiling": spdb_partitions > B_star,
+            "description": f"Two-level ({spdb_partitions} leaf parts) + GiST per bucket",
+        },
+    }
+
+    # Pick the most partitioned layout that stays below B*
+    if not layouts["SPDB"]["exceeds_ceiling"]:
+        selected = "SPDB"
+    elif not layouts["SO-C"]["exceeds_ceiling"]:
+        selected = "SO-C"
+    else:
+        selected = "Mono-C"
+
+    return {
+        "B_star": B_star,
+        "n_slides": n_slides,
+        "total_objects": total_objects,
+        "layouts": layouts,
+        "selected": selected,
+        "reason": layouts[selected]["description"],
+    }
+
+
+# ---------------------------------------------------------------------------
 # Convenience: full analysis for paper
 # ---------------------------------------------------------------------------
 
@@ -518,6 +724,13 @@ def full_cost_analysis(n_objects=1_260_000, viewport_frac=0.05, p=8):
             "pruning_rate": round(1.0 - E_Bhit / B, 4),
         }
 
+    # Partition ceiling analysis
+    ceiling = predict_partition_ceiling(
+        n_objects_per_slide=n_objects,
+        n_slides=127,
+        viewport_frac=viewport_frac,
+    )
+
     return {
         "optimal_T": opt,
         "complexity": {
@@ -531,4 +744,5 @@ def full_cost_analysis(n_objects=1_260_000, viewport_frac=0.05, p=8):
             "n_T_values": len(surface["T_values"]),
         },
         "cost_comparison": cost_comparison,
+        "partition_ceiling": ceiling,
     }

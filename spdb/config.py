@@ -47,21 +47,21 @@ PRIMARY_CONFIGS = ["mono", "slide_only", "spdb", "spdb_zorder"]
 
 TABLE_MONO = "objects_mono"
 TABLE_MONO_TUNED = "objects_mono_tuned"
-TABLE_MONO_CLUSTERED = "objects_mono_clustered"
+TABLE_MONO_CLUSTERED = "objects_mono_clustered_195m"
 TABLE_SLIDE_ONLY = "objects_slide_only"
-TABLE_SLIDE_ONLY_CLUSTERED = "objects_so_clustered"
+TABLE_SLIDE_ONLY_CLUSTERED = "objects_so_clustered_195m"
 TABLE_SPDB = "objects_spdb"
 TABLE_SPDB_ZORDER = "objects_spdb_zorder"
 
 ALL_TABLES = [
-    TABLE_MONO, TABLE_MONO_TUNED, TABLE_MONO_CLUSTERED,
+    TABLE_MONO, TABLE_MONO_CLUSTERED,
     TABLE_SLIDE_ONLY, TABLE_SLIDE_ONLY_CLUSTERED,
-    TABLE_SPDB, TABLE_SPDB_ZORDER,
+    TABLE_SPDB,
 ]
 
+# Primary 195M benchmark: 5 configs (Mono-T dropped: see paper Section 5)
 BENCH_CONFIGS = {
     "Mono":   TABLE_MONO,
-    "Mono-T": TABLE_MONO_TUNED,
     "Mono-C": TABLE_MONO_CLUSTERED,
     "SO":     TABLE_SLIDE_ONLY,
     "SO-C":   TABLE_SLIDE_ONLY_CLUSTERED,

@@ -23,10 +23,10 @@ from benchmarks.q2_knn import run_q2
 
 STORAGE_TABLES = {
     "Mono": config.TABLE_MONO,
-    "Mono-T": config.TABLE_MONO_TUNED,
+    "Mono-C": config.TABLE_MONO_CLUSTERED,
     "SO": config.TABLE_SLIDE_ONLY,
+    "SO-C": config.TABLE_SLIDE_ONLY_CLUSTERED,
     "SPDB": config.TABLE_SPDB,
-    "SPDB-Z": config.TABLE_SPDB_ZORDER,
 }
 
 

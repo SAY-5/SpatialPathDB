@@ -10,12 +10,7 @@ from benchmarks.framework import (
     print_comparison,
 )
 
-CONFIGS = {
-    "Mono": config.TABLE_MONO,
-    "Mono-T": config.TABLE_MONO_TUNED,
-    "SO": config.TABLE_SLIDE_ONLY,
-    "SPDB": config.TABLE_SPDB,
-}
+CONFIGS = config.BENCH_CONFIGS
 
 
 def spatial_join_query_sql(table_name):

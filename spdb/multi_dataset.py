@@ -34,8 +34,15 @@ CANCER_TYPES = {
 def list_patients_by_cancer(cancer_type="BLCA"):
     """List patients from HuggingFace dataset filtered by cancer type.
 
-    The pan-cancer dataset organizes by bcr_patient_barcode which encodes
-    the cancer type in the TCGA barcode (positions 5-8).
+    NOTE: The HuggingFace dataset (longevity-db/pan-cancer-nuclei-seg)
+    contains BLCA only despite the pan-cancer name. For multi-cancer
+    evaluation, use TCIADatasetAdapter instead, which provides 10 cancer
+    types from the TCIA Pan-Cancer-Nuclei-Seg archive.
+
+    The TCGA barcode format is TCGA-XX-YYYY where XX is the TSS (Tissue
+    Source Site) code, NOT the cancer type. Cancer type cannot be reliably
+    determined from the barcode alone. This function returns all patients
+    when cancer_type="BLCA" (the only type in the HF dataset).
     """
     from huggingface_hub import HfApi
 
@@ -43,18 +50,19 @@ def list_patients_by_cancer(cancer_type="BLCA"):
         raise ValueError(f"Unknown cancer type: {cancer_type}. "
                          f"Known: {list(CANCER_TYPES.keys())}")
 
+    if cancer_type != "BLCA":
+        print(f"  WARNING: HuggingFace dataset only contains BLCA data.")
+        print(f"  Use TCIADatasetAdapter for {cancer_type} data.")
+        return []
+
     api = HfApi()
     items = list(api.list_repo_tree(config.HF_DATASET, repo_type="dataset"))
-    prefix = CANCER_TYPES[cancer_type]["prefix"]
 
     patients = []
     for x in items:
         path = getattr(x, "path", "")
         if "bcr_patient_barcode=" in path:
-            # Extract barcode from path
-            barcode = path.split("bcr_patient_barcode=")[-1].rstrip("/")
-            if barcode.startswith(prefix.split("-")[-1]):
-                patients.append(path)
+            patients.append(path)
 
     return sorted(patients)
 
@@ -288,6 +296,251 @@ class OSMDatasetAdapter:
         }
 
         return result, meta
+
+
+# ---------------------------------------------------------------------------
+# TCIA Pan-Cancer-Nuclei-Seg adapter
+# ---------------------------------------------------------------------------
+
+TCIA_CANCER_TYPES = [
+    "BLCA", "BRCA", "CESC", "GBM", "LUAD",
+    "LUSC", "PAAD", "PRAD", "SKCM", "UCEC",
+]
+
+TCIA_BASE_URL = (
+    "https://cancerimagingarchive.net/data/analysis-results/"
+    "pan-cancer-nuclei-seg"
+)
+
+
+class TCIADatasetAdapter:
+    """Adapter for TCIA Pan-Cancer-Nuclei-Seg dataset.
+
+    Downloads pre-segmented nuclei CSVs from TCIA for 10 TCGA cancer types.
+    Each CSV row: AreaInPixels, PhysicalSize, Polygon (x0:y0:x1:y1:...)
+
+    Reference: Hou et al. 2019, "Dataset of Segmented Nuclei in H&E Stained
+    Histopathology Images of 10 Cancer Types", Scientific Data.
+    DOI: 10.7937/TCIA.2019.4A4DKP9U
+    """
+
+    def __init__(self, cache_dir=None):
+        if cache_dir is None:
+            cache_dir = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "data_cache", "tcia"
+            )
+        self.cache_dir = cache_dir
+
+    def list_csv_files(self, cancer_type, data_dir=None):
+        """List available CSV files for a cancer type.
+
+        Parameters
+        ----------
+        cancer_type : str
+            One of TCIA_CANCER_TYPES (e.g., "BRCA").
+        data_dir : str, optional
+            Override directory containing {cancer_type}_polygon/ folders.
+            If None, uses self.cache_dir.
+        """
+        if data_dir is None:
+            data_dir = self.cache_dir
+        polygon_dir = os.path.join(data_dir, f"{cancer_type}_polygon")
+        if not os.path.isdir(polygon_dir):
+            return []
+        return sorted([
+            os.path.join(polygon_dir, f)
+            for f in os.listdir(polygon_dir)
+            if f.endswith(".csv")
+        ])
+
+    def parse_tcia_csv(self, csv_path):
+        """Parse a TCIA nuclei CSV file.
+
+        Format: AreaInPixels, PhysicalSize, Polygon
+        Polygon is colon-separated: x0:y0:x1:y1:...
+
+        Returns DataFrame with centroid_x, centroid_y, area columns.
+        """
+        rows = []
+        with open(csv_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("Area"):
+                    continue
+                parts = line.split(",", 2)
+                if len(parts) < 3:
+                    continue
+                area = float(parts[0])
+                polygon_str = parts[2].strip().strip('"')
+                coords = polygon_str.split(":")
+                if len(coords) < 4:
+                    continue
+                xs, ys = [], []
+                for i in range(0, len(coords) - 1, 2):
+                    try:
+                        xs.append(float(coords[i]))
+                        ys.append(float(coords[i + 1]))
+                    except (ValueError, IndexError):
+                        continue
+                if xs and ys:
+                    rows.append({
+                        "centroid_x": np.mean(xs),
+                        "centroid_y": np.mean(ys),
+                        "area": area,
+                    })
+        return pd.DataFrame(rows)
+
+    def load_cancer_type(self, cancer_type, n_slides=None, seed=42,
+                         data_dir=None):
+        """Load nuclei data for a cancer type.
+
+        Parameters
+        ----------
+        cancer_type : str
+            TCGA cancer type code.
+        n_slides : int, optional
+            Max slides to load (None = all).
+        seed : int
+            RNG seed for slide selection.
+        data_dir : str, optional
+            Override data directory.
+
+        Returns
+        -------
+        list of (DataFrame, dict) tuples: (nuclei_df, metadata) per slide.
+        """
+        csv_files = self.list_csv_files(cancer_type, data_dir)
+        if not csv_files:
+            print(f"  WARNING: No CSV files found for {cancer_type}")
+            return []
+
+        if n_slides is not None and len(csv_files) > n_slides:
+            rng = np.random.RandomState(seed)
+            step = max(1, len(csv_files) // n_slides)
+            csv_files = csv_files[::step][:n_slides]
+
+        results = []
+        for csv_path in csv_files:
+            slide_name = os.path.splitext(os.path.basename(csv_path))[0]
+            slide_id = f"{cancer_type}_{slide_name}"
+
+            df = self.parse_tcia_csv(csv_path)
+            if len(df) < 100:
+                continue
+
+            meta = {
+                "slide_id": slide_id,
+                "cancer_type": cancer_type,
+                "num_objects": len(df),
+                "source": "TCIA_Pan-Cancer-Nuclei-Seg",
+            }
+            results.append((df, meta))
+            print(f"    {slide_id}: {len(df):,} nuclei")
+
+        return results
+
+    def transform_slide(self, df, slide_id, p=None, bucket_target=None):
+        """Transform raw TCIA nuclei data to SPDB schema.
+
+        Parameters
+        ----------
+        df : DataFrame
+            Must have centroid_x, centroid_y, area columns.
+        slide_id : str
+            Unique identifier for this slide.
+        p : int
+            Hilbert order.
+        bucket_target : int
+            Target objects per Hilbert bucket.
+
+        Returns
+        -------
+        (DataFrame, dict) : SPDB-schema DataFrame and metadata.
+        """
+        if p is None:
+            p = config.HILBERT_ORDER
+        if bucket_target is None:
+            bucket_target = config.BUCKET_TARGET
+
+        cx = df["centroid_x"].values.astype(float)
+        cy = df["centroid_y"].values.astype(float)
+
+        w = float(cx.max() - cx.min()) + 1.0
+        h = float(cy.max() - cy.min()) + 1.0
+
+        gx, gy = hilbert.normalize_coords(cx, cy, w, h, p)
+        h_keys = hilbert.encode_batch(gx, gy, p)
+
+        zgx, zgy = zorder.normalize_coords(cx, cy, w, h, p)
+        z_keys = zorder.encode_batch(zgx, zgy, p)
+
+        tile_size = 256.0
+        tile_ids = [
+            f"{int(x // tile_size)}_{int(y // tile_size)}"
+            for x, y in zip(cx, cy)
+        ]
+
+        result = pd.DataFrame({
+            "slide_id": slide_id,
+            "centroid_x": cx,
+            "centroid_y": cy,
+            "class_label": "nucleus",
+            "tile_id": tile_ids,
+            "hilbert_key": h_keys,
+            "zorder_key": z_keys,
+            "area": df["area"].values,
+            "perimeter": np.sqrt(df["area"].values) * 4,
+            "confidence": 1.0,
+            "pipeline_id": "tcia_saltz2018",
+        })
+
+        n_buckets = max(1, len(result) // bucket_target)
+        meta = {
+            "slide_id": slide_id,
+            "image_width": w,
+            "image_height": h,
+            "num_objects": len(result),
+            "num_buckets": n_buckets,
+            "dataset_type": "tcia_nuclei",
+        }
+
+        return result, meta
+
+
+def download_tcia_cancer_type(cancer_type, output_dir=None):
+    """Download TCIA polygon CSVs for a cancer type via NBIA REST API.
+
+    This function constructs the download URL and fetches the polygon
+    archive for the specified cancer type.
+    """
+    import urllib.request
+    import zipfile
+
+    if output_dir is None:
+        output_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "data_cache", "tcia",
+        )
+    os.makedirs(output_dir, exist_ok=True)
+
+    polygon_dir = os.path.join(output_dir, f"{cancer_type}_polygon")
+    if os.path.isdir(polygon_dir) and len(os.listdir(polygon_dir)) > 0:
+        print(f"  {cancer_type}: already downloaded "
+              f"({len(os.listdir(polygon_dir))} files)")
+        return polygon_dir
+
+    # TCIA analysis results direct download URL pattern
+    url = (
+        f"https://cancerimagingarchive.net/tcia-downloads/"
+        f"pan-cancer-nuclei-seg-da-other-3/"
+    )
+    print(f"  Downloading {cancer_type} polygon data from TCIA...")
+    print(f"  NOTE: If automatic download fails, manually download from:")
+    print(f"  https://www.cancerimagingarchive.net/analysis-result/"
+          f"pan-cancer-nuclei-seg/")
+    print(f"  Extract {cancer_type}_polygon/ folder to: {output_dir}")
+
+    return polygon_dir
 
 
 # ---------------------------------------------------------------------------

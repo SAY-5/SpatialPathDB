@@ -159,6 +159,7 @@ def parse_buffers(plan_json):
         "shared_read": 0,
         "shared_dirtied": 0,
         "shared_written": 0,
+        "heap_fetches": 0,
         "rows_removed_by_filter": 0,
         "actual_rows": 0,
         "subplans_removed": 0,
@@ -174,6 +175,7 @@ def parse_buffers(plan_json):
         result["shared_dirtied"] += node.get("Shared Dirtied Blocks", 0)
         result["shared_written"] += node.get("Shared Written Blocks", 0)
         result["rows_removed_by_filter"] += node.get("Rows Removed by Filter", 0)
+        result["heap_fetches"] += node.get("Heap Fetches", 0)
         result["actual_rows"] += node.get("Actual Rows", 0)
         nt = node.get("Node Type", "")
         result["node_types"].append(nt)

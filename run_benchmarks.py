@@ -182,7 +182,9 @@ def run_isolated():
 def run_duckdb():
     """Run DuckDB Spatial baseline comparison."""
     try:
-        from benchmarks.duckdb_baseline import compare_pg_vs_duckdb, HAS_DUCKDB
+        from benchmarks.duckdb_baseline import (
+            setup_duckdb, run_all_duckdb, compare_pg_vs_duckdb, HAS_DUCKDB,
+        )
     except ImportError as e:
         print(f"ERROR: Cannot import duckdb_baseline: {e}")
         return
@@ -195,11 +197,44 @@ def run_duckdb():
     print("DuckDB Spatial Baseline Comparison")
     print("=" * 60)
 
-    results = compare_pg_vs_duckdb(n_trials=200)
+    setup_duckdb()
+    run_all_duckdb(n_trials=200)
+    results = compare_pg_vs_duckdb()
 
     from benchmarks.framework import save_results
     save_results(results, "duckdb_comparison")
     print("DuckDB comparison saved.")
+
+
+def run_routed():
+    """Run SPDB-R (application-level partition routing) benchmark."""
+    import psycopg2
+    from spdb.partition_router import benchmark_routed_vs_native
+    from benchmarks.framework import save_results
+
+    print("\n" + "=" * 60)
+    print("SPDB-R: Partition Router Benchmark")
+    print("=" * 60)
+
+    conn = psycopg2.connect(config.dsn())
+    results = benchmark_routed_vs_native(conn, n_trials=500)
+    conn.close()
+    save_results(results, "spdb_routed")
+    return results
+
+
+def run_planner():
+    """Run planner overhead sweep (partition count vs. planning time)."""
+    from benchmarks.planner_overhead import run_planner_overhead
+    from benchmarks.framework import save_results
+
+    print("\n" + "=" * 60)
+    print("WS2: Planner Overhead Calibration")
+    print("=" * 60)
+
+    results = run_planner_overhead(n_trials=200)
+    save_results(results, "planner_overhead")
+    return results
 
 
 def run_costmodel():
@@ -272,6 +307,8 @@ if __name__ == "__main__":
         "isolated": run_isolated,
         "duckdb": run_duckdb,
         "costmodel": run_costmodel,
+        "routed": run_routed,
+        "planner": run_planner,
         "figures": run_figures,
     }
 

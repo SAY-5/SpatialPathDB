@@ -14,12 +14,7 @@ from benchmarks.framework import (
     print_comparison, wilcoxon_ranksum,
 )
 
-CONFIGS = {
-    "Mono": config.TABLE_MONO,
-    "Mono-T": config.TABLE_MONO_TUNED,
-    "SO": config.TABLE_SLIDE_ONLY,
-    "SPDB": config.TABLE_SPDB,
-}
+CONFIGS = config.BENCH_CONFIGS
 
 SPDB_TABLES = {config.TABLE_SPDB, config.TABLE_SPDB_ZORDER}
 
@@ -124,7 +119,8 @@ def run_q1_all_configs(n_trials=500, viewport_frac=0.05, seed=42):
               f"mean={stats['mean']:.1f}ms  std={stats['std']:.1f}ms")
 
     stat_tests = {}
-    pairs = [("Mono", "SPDB"), ("SO", "SPDB"), ("Mono", "SO"), ("Mono-T", "SPDB")]
+    pairs = [("Mono", "SPDB"), ("SO", "SPDB"), ("Mono", "SO"),
+             ("Mono-C", "SO-C"), ("SO-C", "SPDB"), ("Mono", "SO-C")]
     for a, b in pairs:
         if a in all_latencies and b in all_latencies:
             stat, p = wilcoxon_ranksum(all_latencies[a], all_latencies[b])
